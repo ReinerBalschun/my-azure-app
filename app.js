@@ -5,14 +5,15 @@ require('dotenv').config();  // Umgebungsvariablen aus .env laden
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Holen des Connection Strings aus der Umgebungsvariablen
-const connectionString = process.env.MY_DB_CONNECTION;
-
+// Holen der Umgebungsvariablen
 const config = {
-    connectionString: connectionString,
+    server: "mywebappserver-rb.database.windows.net", // Dein SQL-Servername ohne "tcp:"
+    database: "MyWebAppDB", // Name der Datenbank
+    user: "serversqlrb", // Dein Benutzername
+    password: process.env.SQL_PASSWORD, // Dein Passwort (aus .env oder Umgebungsvariable)
     options: {
-        encrypt: true,  // Wählt Verschlüsselung
-        trustServerCertificate: true  // Vertrau Serverzertifikat, wenn du SSL verwendest
+        encrypt: true, // Verschlüsselung
+        trustServerCertificate: false // Keine selbstsignierten Zertifikate
     }
 };
 
@@ -21,16 +22,15 @@ app.get('/', (req, res) => {
     sql.connect(config).then(pool => {
         return pool.request().query('SELECT * FROM Users');  // Beispielabfrage
     }).then(result => {
-        const users = result.recordset;  // Daten aus der Abfrage
+        const users = result.recordset;
 
-        // Gebe die Daten als HTML zurück
         let htmlResponse = '<h1>Users from Database:</h1><ul>';
         users.forEach(user => {
             htmlResponse += `<li>${user.name} - ${user.email}</li>`;
         });
         htmlResponse += '</ul>';
 
-        res.send(htmlResponse);  // Sende die HTML-Seite mit den Daten zurück
+        res.send(htmlResponse);
     }).catch(err => {
         console.error('Error connecting to the database:', err);
         res.send('<h1>Error connecting to the database</h1>');
