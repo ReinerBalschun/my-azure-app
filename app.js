@@ -240,9 +240,16 @@ app.get('/queue/view', async (req, res) => {
         const messages = await queueClient.receiveMessages({ numberOfMessages: 32 }); // Get up to 32 messages
         let htmlResponse = '<h1>Messages in Queue:</h1><ul>';
 
-        // Loop through and display all messages
-        messages.receivedMessageItems.forEach(msg => {
-            htmlResponse += `<li>${msg.messageText}</li>`;
+        // Sort messages by their enqueue time (oldest to newest)
+        const sortedMessages = messages.receivedMessageItems.sort((a, b) => 
+            new Date(a.insertedOn) - new Date(b.insertedOn)
+        );
+
+        // Display all messages with formatted timestamps
+        sortedMessages.forEach(msg => {
+            const date = new Date(msg.insertedOn);
+            const formattedTimestamp = `${date.toLocaleDateString()} ${date.toLocaleTimeString()} GMT+01`;
+            htmlResponse += `<li>${msg.messageText} <small><strong>(${formattedTimestamp})</strong></small></li>`;
         });
 
         htmlResponse += '</ul>';
