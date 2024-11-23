@@ -4,7 +4,7 @@ const { BlobServiceClient } = require('@azure/storage-blob');
 require('dotenv').config();  // Umgebungsvariablen aus .env laden
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 
 // SQL-Datenbank-Konfiguration
 const sqlConfig = {
