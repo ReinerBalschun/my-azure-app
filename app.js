@@ -19,7 +19,7 @@ const sqlConfig = {
 };
 
 // Azure Blob Storage Konfiguration
-const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.STORAGE_CONNECTION_STRING);
 
 // Standard-Blob-Container-Name
 const containerName = 'myblobcontainer';
