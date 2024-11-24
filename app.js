@@ -278,6 +278,38 @@ app.get('/queue/send', (req, res) => {
     `);
 });
 
+// Bot-Adapter einrichten
+const { CloudAdapter, ConfigurationBotFrameworkAuthentication } = require('botbuilder');
+
+// Replace the existing adapter setup with this:
+const botFrameworkAuthentication = new ConfigurationBotFrameworkAuthentication({
+    MicrosoftAppId: process.env.MICROSOFT_APP_ID,
+    MicrosoftAppPassword: process.env.MICROSOFT_APP_PASSWORD,
+    MicrosoftAppTenantId: process.env.MICROSOFT_APP_TENANT_ID
+});
+
+const adapter = new CloudAdapter(botFrameworkAuthentication);
+
+// Fehlerbehandlung für Adapter
+adapter.onTurnError = async (context, error) => {
+    console.error(`[onTurnError]: ${error}`);
+    await context.sendActivity('The bot encountered an error.');
+};
+
+// Einfacher Echo-Bot
+const botLogic = async (context) => {
+    if (context.activity.type === 'message') {
+        await context.sendActivity(`You said: ${context.activity.text}`);
+    }
+};
+
+// Bot-Endpunkt hinzufügen
+app.post('/api/messages', async (req, res) => {
+    await adapter.process(req, res, async (context) => {
+        await botLogic(context);
+    });
+});
+
 // Server starten
 app.listen(port, () => {
     console.log(`Server läuft auf http://localhost:${port}`);

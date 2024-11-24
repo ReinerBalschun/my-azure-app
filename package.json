@@ -13,6 +13,8 @@
   "dependencies": {
     "@azure/storage-blob": "^12.26.0",
     "@azure/storage-queue": "^12.25.0",
+    "botbuilder": "^4.19.3",
+    "botframework-connector": "^4.19.3",
     "dotenv": "^16.0.3",
     "express": "^4.21.1",
     "mssql": "^11.0.1"
