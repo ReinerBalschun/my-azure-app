@@ -56,7 +56,7 @@ app.get('/api/directline/token', async (req, res) => {
     }
 });
 
-// Startseite mit Chatbot-Integration
+// Startseite mit Korrekturen
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html>
@@ -104,7 +104,7 @@ app.get('/', (req, res) => {
                 .box a:hover {
                     color: #0056b3;
                 }
-                #chatbot {
+                .chat-icon {
                     position: fixed;
                     bottom: 20px;
                     right: 20px;
@@ -114,13 +114,17 @@ app.get('/', (req, res) => {
                     border-radius: 50%;
                     width: 60px;
                     height: 60px;
+                    font-size: 30px;
                     display: flex;
                     justify-content: center;
                     align-items: center;
                     cursor: pointer;
                     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                 }
-                #chatbot iframe {
+                .chat-icon:hover {
+                    background-color: #0056b3;
+                }
+                #webChat {
                     display: none;
                     position: fixed;
                     bottom: 80px;
@@ -128,10 +132,9 @@ app.get('/', (req, res) => {
                     width: 400px;
                     height: 600px;
                     border: none;
+                    border-radius: 8px;
                     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                }
-                #chatbot.active iframe {
-                    display: block;
+                    overflow: hidden;
                 }
             </style>
         </head>
@@ -158,30 +161,49 @@ app.get('/', (req, res) => {
                     <p>Send and retrieve messages from the Azure Queue Storage.</p>
                     <a href="/queue">Go to Queue</a>
                 </div>
+                <div class="box">
+                    <h2>Chat with Bot</h2>
+                    <p>Start a conversation with your Azure Bot.</p>
+                    <a href="#" onclick="toggleChat()">Open Chat</a>
+                </div>
             </div>
-            <div id="chatbot">
-                💬
-                <iframe id="webchat" sandbox="allow-scripts allow-same-origin"></iframe>
-            </div>
+            <!-- Chat Widget -->
+            <div id="webChat"></div>
+            <button class="chat-icon" onclick="toggleChat()">💬</button>
             <script>
-                document.getElementById('chatbot').addEventListener('click', async function () {
-                    const iframe = document.getElementById('webchat');
-                    this.classList.toggle('active');
-                    if (!iframe.src) {
+                let chatInitialized = false;
+                async function toggleChat() {
+                    const chatWidget = document.getElementById('webChat');
+                    if (!chatInitialized) {
                         try {
                             const response = await fetch('/api/directline/token');
                             const data = await response.json();
-                            iframe.src = 'https://webchat.botframework.com/embed/MyWebApp-Bot?s=' + data.token;
+                            if (response.ok && data.token) {
+                                const iframe = document.createElement('iframe');
+                                iframe.src = 'https://webchat.botframework.com/embed/MyWebApp-Bot?s=' + data.token;
+                                iframe.style.width = '100%';
+                                iframe.style.height = '100%';
+                                iframe.style.border = 'none';
+                                chatWidget.appendChild(iframe);
+                                chatInitialized = true;
+                            } else {
+                                console.error('Failed to initialize chat:', data);
+                                alert('Error initializing chat. Please try again later.');
+                            }
                         } catch (error) {
                             console.error('Error fetching Direct Line token:', error);
+                            alert('Error initializing chat. Please try again later.');
                         }
                     }
-                });
+                    chatWidget.style.display = chatWidget.style.display === 'block' ? 'none' : 'block';
+                }
             </script>
         </body>
         </html>
     `);
 });
+
+
 
 // Seite: Benutzer aus der SQL-Datenbank anzeigen
 app.get('/users', async (req, res) => {
