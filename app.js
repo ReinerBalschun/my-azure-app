@@ -2,6 +2,7 @@ const express = require('express');
 const sql = require('mssql');
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { QueueServiceClient } = require('@azure/storage-queue');
+const axios = require('axios'); // Für HTTP-Anfragen
 require('dotenv').config(); // Umgebungsvariablen aus .env laden
 
 const app = express();
@@ -33,12 +34,37 @@ const queueName = 'myqueue';
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Startseite
+// Direct Line Secret Key aus .env laden
+const DIRECT_LINE_SECRET = process.env.DIRECT_LINE_SECRET;
+
+// Token-Endpunkt für Direct Line
+app.get('/api/directline/token', async (req, res) => {
+    try {
+        const response = await axios.post(
+            'https://directline.botframework.com/v3/directline/tokens/generate',
+            {},
+            {
+                headers: {
+                    Authorization: `Bearer ${DIRECT_LINE_SECRET}`,
+                },
+            }
+        );
+        res.status(200).send({ token: response.data.token });
+    } catch (error) {
+        console.error('Error generating Direct Line token:', error.message);
+        res.status(500).send('Error generating Direct Line token');
+    }
+});
+
+// Startseite mit Chatbot-Integration
 app.get('/', (req, res) => {
     res.send(`
-        <html>
+        <!DOCTYPE html>
+        <html lang="en">
         <head>
-            <title>Welcome to My Web App</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>My Azure Web App</title>
             <style>
                 body {
                     font-family: Arial, sans-serif;
@@ -78,17 +104,34 @@ app.get('/', (req, res) => {
                 .box a:hover {
                     color: #0056b3;
                 }
-                .button {
-                    display: inline-block;
-                    margin-top: 20px;
-                    padding: 10px 20px;
+                #chatbot {
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
                     background-color: #007bff;
                     color: white;
-                    text-decoration: none;
-                    border-radius: 5px;
+                    border: none;
+                    border-radius: 50%;
+                    width: 60px;
+                    height: 60px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    cursor: pointer;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                 }
-                .button:hover {
-                    background-color: #0056b3;
+                #chatbot iframe {
+                    display: none;
+                    position: fixed;
+                    bottom: 80px;
+                    right: 20px;
+                    width: 400px;
+                    height: 600px;
+                    border: none;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                }
+                #chatbot.active iframe {
+                    display: block;
                 }
             </style>
         </head>
@@ -116,6 +159,25 @@ app.get('/', (req, res) => {
                     <a href="/queue">Go to Queue</a>
                 </div>
             </div>
+            <div id="chatbot">
+                💬
+                <iframe id="webchat" sandbox="allow-scripts allow-same-origin"></iframe>
+            </div>
+            <script>
+                document.getElementById('chatbot').addEventListener('click', async function () {
+                    const iframe = document.getElementById('webchat');
+                    this.classList.toggle('active');
+                    if (!iframe.src) {
+                        try {
+                            const response = await fetch('/api/directline/token');
+                            const data = await response.json();
+                            iframe.src = 'https://webchat.botframework.com/embed/MyWebApp-Bot?s=' + data.token;
+                        } catch (error) {
+                            console.error('Error fetching Direct Line token:', error);
+                        }
+                    }
+                });
+            </script>
         </body>
         </html>
     `);
